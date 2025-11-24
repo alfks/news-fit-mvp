@@ -1,0 +1,56 @@
+[
+  {
+    "id": "fact_001",
+    "text": "정부는 2025학년도 입시부터 의대 입학 정원을 2,000명 늘리기로 확정 발표했다. 이는 1998년 이후 27년 만의 증원이다.",
+    "metadata": {
+      "type": "fact",
+      "topic": "의대증원",
+      "source": "연합뉴스"
+    }
+  },
+  {
+    "id": "fact_002",
+    "text": "보건복지부는 이번 증원 규모가 2035년까지 예상되는 의사 부족 인원 1만 5천 명을 확충하기 위한 조치라고 설명했다.",
+    "metadata": {
+      "type": "fact",
+      "topic": "의대증원",
+      "source": "정부발표"
+    }
+  },
+  {
+    "id": "opinion_prog_001",
+    "text": "급격한 의대 정원 확대는 최상위권 인재들의 이공계 이탈을 가속화하여, 장기적으로 국가 과학기술 경쟁력을 저하시킬 것이라는 우려가 제기된다.",
+    "metadata": {
+      "type": "progressive_quote",
+      "topic": "의대증원",
+      "source": "과학계성명"
+    }
+  },
+  {
+    "id": "opinion_prog_002",
+    "text": "의료계는 현재의 의대 교육 인프라로는 2천 명의 증원을 감당할 수 없으며, 이는 의학교육의 질 저하로 이어질 것이라고 경고했다.",
+    "metadata": {
+      "type": "progressive_quote",
+      "topic": "의대증원",
+      "source": "의대협회"
+    }
+  },
+  {
+    "id": "opinion_cons_001",
+    "text": "OECD 통계에 따르면 한국의 인구 1천 명당 의사 수는 2.6명으로 회원국 평균인 3.7명에 크게 못 미치는 최하위권 수준이다.",
+    "metadata": {
+      "type": "conservative_quote",
+      "topic": "의대증원",
+      "source": "OECD통계"
+    }
+  },
+  {
+    "id": "opinion_cons_002",
+    "text": "지방 의료원들은 연봉 4억 원을 제시해도 의사를 구하지 못해 응급실을 폐쇄하는 등 필수의료 공백이 한계에 다다른 상황이다.",
+    "metadata": {
+      "type": "conservative_quote",
+      "topic": "의대증원",
+      "source": "지방의료원"
+    }
+  }
+]
