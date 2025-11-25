@@ -1,0 +1,14 @@
+# 1. 파이썬 캐시 파일 (무조건 제외)
+__pycache__/
+*.pyc
+
+# 2. 가상환경 폴더
+.venv/
+venv/
+
+# 3. ChromaDB 데이터 (바이너리 파일이라 충돌 남, MVP라 올린다면 제외 X)
+# data/ground_truth_db/
+
+# 4. 모델 가중치 파일 (용량이 큼)
+# models/adapter_conservative/
+# models/adapter_progressive/
