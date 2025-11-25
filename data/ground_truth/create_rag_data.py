@@ -2,72 +2,96 @@ import json
 import os
 
 # ==========================================
-# 1. 경로 설정 (상위 폴더인 data/에 저장)
+# 1. 경로 설정
 # ==========================================
-# 현재 스크립트 위치: .../data/ground_truth/
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(BASE_DIR)) # news-fit-mvp/
 
-# 목표 폴더: 상위 폴더인 .../data/
-DATA_DIR = os.path.dirname(BASE_DIR)
+# 크롤링된 데이터 경로 (crawler.py가 저장한 곳)
+RAW_DATA_PATH = os.path.join(PROJECT_ROOT, "data", "input", "articles_naver.json")
 
-# 최종 파일 경로: .../data/ground_truth.json
-FILE_NAME = "ground_truth.json"
-SAVE_PATH = os.path.join(DATA_DIR, FILE_NAME)
+# 최종 저장 경로 (RAG용)
+OUTPUT_PATH = os.path.join(PROJECT_ROOT, "data", "ground_truth.json")
 
-print(f"📂 현재 스크립트 위치: {BASE_DIR}")
-print(f"💾 데이터 생성 위치:   {SAVE_PATH}")
+print(f"📂 읽을 파일: {RAW_DATA_PATH}")
+print(f"💾 저장할 파일: {OUTPUT_PATH}")
 
 # ==========================================
-# 2. 데이터 정의 (최저임금 이슈, 태그: minimum_wage)
+# 2. 분류 규칙 (언론사별 성향 매핑)
 # ==========================================
-rag_data = [
-    # --- 1. Fact 데이터 (공통 팩트) ---
-    {
-        "id": "fact_mw_01",
-        "text": "2024년도 최저임금이 올해보다 2.5% 오른 시간당 9,860원으로 최종 확정되었다. 월급으로 환산하면 209시간 기준 206만 740원이다.",
-        "metadata": {
-            "type": "fact", 
-            "topic": "minimum_wage",
-            "source": "연합뉴스"
-        }
-    },
-    {
-        "id": "fact_mw_02",
-        "text": "최저임금위원회는 밤샘 논의 끝에 표결을 통해 9,860원 안을 의결했다. 이는 역대 최장 심의 기간인 110일을 기록한 결과다.",
-        "metadata": {
-            "type": "fact", 
-            "topic": "minimum_wage",
-            "source": "연합뉴스"
-        }
-    },
+# 스트레이트 뉴스 (Fact)
+FACT_MEDIA = ["연합뉴스", "YTN", "KBS", "SBS", "MBC"]
 
-    # --- 2. Trojan: 진보/노동계 논거 (보수 사용자에게 보여줄 내용) ---
-    {
-        "id": "opinion_prog_mw",
-        "text": "노동계는 최근의 가파른 물가 상승률과 공공요금 인상을 고려할 때, 2.5% 인상은 실질임금이 삭감되는 것과 다를 바 없어 생존권이 위협받는다고 주장한다.",
-        "metadata": {
-            "type": "progressive_quote", 
-            "topic": "minimum_wage",
-            "source": "민주노총성명"
-        }
-    },
+# 보수 성향 (Opinion - Conservative)
+CONS_MEDIA = ["조선일보", "중앙일보", "동아일보", "한국경제", "매일경제"]
 
-    # --- 3. Trojan: 보수/경영계 논거 (진보 사용자에게 보여줄 내용) ---
-    {
-        "id": "opinion_cons_mw",
-        "text": "소상공인연합회는 '현재도 한계 상황인 자영업자들에게 이번 인상은 폐업을 강요하는 사망 선고'라며, 고용 축소가 불가피하다고 호소했다.",
-        "metadata": {
-            "type": "conservative_quote", 
-            "topic": "minimum_wage",
-            "source": "소상공인연합회"
-        }
+# 진보 성향 (Opinion - Progressive)
+PROG_MEDIA = ["한겨레", "경향신문", "오마이뉴스", "프레시안"]
+
+def classify_article(article):
+    media = article.get("media_outlet", "")
+    content = article.get("content", "")
+    
+    # 너무 짧은 기사는 제외
+    if not content or len(content) < 50:
+        return None
+
+    metadata = {
+        "source": media,
+        "topic": "minimum_wage", # 지금은 최저임금 주제로 고정
+        "date": article.get("published_date", "")
     }
-]
+
+    # 1. Fact 분류
+    if media in FACT_MEDIA:
+        metadata["type"] = "fact"
+        return metadata
+
+    # 2. Trojan(Opinion) 분류
+    elif media in CONS_MEDIA:
+        metadata["type"] = "conservative_quote"
+        return metadata
+        
+    elif media in PROG_MEDIA:
+        metadata["type"] = "progressive_quote"
+        return metadata
+    
+    return None # 분류 불가
 
 # ==========================================
-# 3. JSON 파일로 저장
+# 3. 데이터 변환 실행
 # ==========================================
-with open(SAVE_PATH, "w", encoding="utf-8") as f:
+if not os.path.exists(RAW_DATA_PATH):
+    print(f"❌ [오류] 크롤링된 데이터가 없습니다: {RAW_DATA_PATH}")
+    print("👉 먼저 크롤러를 실행해서 데이터를 수집해주세요.")
+    exit()
+
+with open(RAW_DATA_PATH, "r", encoding="utf-8") as f:
+    raw_data = json.load(f)
+
+articles = raw_data.get("articles", [])
+rag_data = []
+
+print(f"🔄 총 {len(articles)}개 기사 처리 중...")
+
+for article in articles:
+    meta = classify_article(article)
+    if meta:
+        # RAG 데이터 포맷으로 변환
+        rag_item = {
+            "id": article["article_id"],
+            "text": article["content"][:1000], # 너무 길면 자름 (임베딩 제한 고려)
+            "metadata": meta
+        }
+        rag_data.append(rag_item)
+
+# ==========================================
+# 4. 저장
+# ==========================================
+with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
     json.dump(rag_data, f, ensure_ascii=False, indent=2)
 
-print(f"✅ 데이터 파일 생성 완료! ({SAVE_PATH})")
+print(f"✅ 변환 완료! 총 {len(rag_data)}개의 RAG용 데이터 생성.")
+print(f"   - Fact: {len([d for d in rag_data if d['metadata']['type']=='fact'])}개")
+print(f"   - Conservative: {len([d for d in rag_data if d['metadata']['type']=='conservative_quote'])}개")
+print(f"   - Progressive: {len([d for d in rag_data if d['metadata']['type']=='progressive_quote'])}개")
