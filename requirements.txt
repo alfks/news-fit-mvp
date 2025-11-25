@@ -5,3 +5,6 @@ transformers
 peft
 torch
 scikit-learn
+unsloth
+datasets
+trl

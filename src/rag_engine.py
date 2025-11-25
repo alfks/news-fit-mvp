@@ -1,4 +1,3 @@
-# src/rag_engine.py
 import chromadb
 from sentence_transformers import SentenceTransformer
 
@@ -9,36 +8,49 @@ class RagEngine:
         self.collection = self.client.get_or_create_collection("news_data")
         self.embedder = SentenceTransformer("jhgan/ko-sbert-nli")
 
-    def retrieve_context(self, query_text, trojan_keyword, user_bias):
+    def retrieve_context(self, query_text, target_trojan_type, topic):
+        """
+        인자 설명:
+        - query_text: 검색할 텍스트 (기사 원문 일부)
+        - target_trojan_type: 검색할 반대 논리 타입 ('progressive_quote' 등)
+        - topic: 검색할 주제 ('minimum_wage' 등)
+        """
         query_vec = self.embedder.encode([query_text]).tolist()
         
-        # 1. Fact 검색
+        # 1. Fact 검색 (주제에 맞는 팩트만)
         facts = self.collection.query(
             query_embeddings=query_vec,
             n_results=1,
-            where={"type": "fact"} 
+            where={
+                "$and": [
+                    {"type": "fact"},
+                    {"topic": topic}  # 주제가 일치하는 것만 검색
+                ]
+            }
         )
         
-        # 2. Trojan 검색
-        target_bias_tag = "progressive_quote" if user_bias == "conservative" else "conservative_quote"
-        
+        # 2. Trojan 검색 (주제에 맞고 + 지정된 반대 타입인 것만)
         trojans = self.collection.query(
-            query_embeddings=self.embedder.encode([trojan_keyword]).tolist(),
+            query_embeddings=query_vec,
             n_results=1,
-            where={"type": target_bias_tag}
+            where={
+                "$and": [
+                    {"type": target_trojan_type}, # FrameAnalyzer가 정해준 타입
+                    {"topic": topic}             # 주제가 일치하는 것만 검색
+                ]
+            }
         )
         
-        # --- [수정된 부분] 안전하게 데이터 꺼내기 ---
-        # facts['documents']가 존재하고, 그 안의 첫 번째 리스트가 비어있지 않은지 확인해야 함
+        # --- 안전하게 데이터 꺼내기 ---
         if facts['documents'] and facts['documents'][0]:
             fact_text = facts['documents'][0][0]
         else:
-            fact_text = "관련 팩트 없음 (DB가 비어있거나 매칭되지 않음)"
+            fact_text = f"관련 팩트 없음 (주제: {topic})"
 
         if trojans['documents'] and trojans['documents'][0]:
             trojan_text = trojans['documents'][0][0]
         else:
-            trojan_text = "관련 반론 없음"
+            trojan_text = f"관련 반론 없음 (타입: {target_trojan_type})"
         # ----------------------------------------
         
         return {
