@@ -26,25 +26,28 @@ class StyleGenerator:
             self.active_adapter = bias_type
 
     def generate(self, original_text, context_data, target_persona):
-        """프롬프트 조립 및 생성"""
-        
         fact = context_data['fact_anchor']
         trojan = context_data['trojan_horse']
         
-        prompt = f"""
-### 역할:
-당신은 {target_persona} 성향의 뉴스 에디터입니다. 
-독자가 읽기 편하도록 아래 지침에 따라 기사를 재작성하세요.
+        # [디벨롭 포인트] 프롬프트를 '단계별 사고(CoT)' 구조로 변경
+        prompt = f"""### 역할:
+당신은 {target_persona} 성향을 가진 20년 차 베테랑 논설위원입니다.
+독자가 공감할 수 있도록 주어진 기사를 재구성하세요.
 
-### 지침:
-1. [팩트]는 절대 왜곡하지 말고 그대로 유지할 것. (Fact Anchoring)
-2. [트로이 목마] 내용을 기사 중간에 "일각에서는 ~라는 의견도 있다" 형태로 자연스럽게 인용할 것.
-3. 전체적인 어조는 {target_persona} 스타일에 맞출 것.
+### 미션:
+1. **[팩트]**는 절대 왜곡하지 말고 유지하십시오.
+2. **[원문]**의 건조한 문체를 {target_persona} 특유의 어조(비판적, 단호함, 호소력 등)로 바꾸십시오.
+3. **[트로이 목마]** 정보를 글의 흐름 속에 자연스럽게 녹여내십시오. (단순 나열 금지. "비록 ~라는 지적도 있지만..." 형태의 양보절로 활용)
 
 ### 입력 데이터:
-- 원문: {original_text}
-- [팩트]: {fact}
-- [트로이 목마]: {trojan}
+- [원문]: {original_text}
+- [팩트 (유지)]: {fact}
+- [트로이 목마 (반대 논리)]: {trojan}
+
+### 작성 가이드:
+- 서론: 이슈의 심각성을 {target_persona} 관점에서 환기
+- 본론: 팩트를 근거로 주장을 전개하되, [트로이 목마]를 교묘하게 언급하여 균형감 확보
+- 결론: 강력한 제언으로 마무리
 
 ### 재작성된 기사:
 """
