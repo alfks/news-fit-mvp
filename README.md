@@ -32,33 +32,33 @@
 
 ```mermaid
 graph TD
-    User_Input([📄 기사 원문]) --> Module_1
-    User_Pref([🎚️ 사용자 성향]) -.-> Module_2 & Module_3
+    User_Input(["📄 기사 원문"]) --> Module_1
+    User_Pref(["🎚️ 사용자 성향"]) -.-> Module_2 & Module_3
     
     subgraph "Module 1: Diagnosis"
-    Module_1[🧠 프레임 진단 (Frame Analysis)]
+    Module_1["🧠 프레임 진단 (Frame Analysis)"]
     end
     
     Module_1 --> Module_2
     
     subgraph "Module 2: Retrieval (RAG)"
-    Module_2[🔍 지능형 문맥 확보]
-    DB[(🗄️ Ground Truth DB)] <--> Module_2
-    note[("Fact (Anchor)\n+ Trojan (Counter-Logic)")]
+    Module_2["🔍 지능형 문맥 확보"]
+    DB[("🗄️ Ground Truth DB")] <--> Module_2
+    note["Fact (Anchor)<br/>+ Trojan (Counter-Logic)"]
     end
     
     Module_2 --> Module_3
     
     subgraph "Module 3: Generation (LoRA)"
-    Module_3[✍️ 스타일 변환 (LLM + LoRA)]
-    Adapter_A[🔴 보수 Adapter] -.-> Module_3
-    Adapter_B[🔵 진보 Adapter] -.-> Module_3
+    Module_3["✍️ 스타일 변환 (LLM + LoRA)"]
+    Adapter_A["🔴 보수 Adapter"] -.-> Module_3
+    Adapter_B["🔵 진보 Adapter"] -.-> Module_3
     end
     
     Module_3 --> Module_4
     
     subgraph "Module 4: Validation"
-    Module_4{⚖️ 뉴턴 지수 측정}
-    Module_4 -- Pass --> Output([📰 맞춤형 뉴스 브리핑])
+    Module_4{"⚖️ 뉴턴 지수 측정"}
+    Module_4 -- Pass --> Output(["📰 맞춤형 뉴스 브리핑"])
     Module_4 -- Fail --> Module_3
     end
