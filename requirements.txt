@@ -8,3 +8,6 @@ scikit-learn
 unsloth
 datasets
 trl
+dotenv
+bs4
+requests

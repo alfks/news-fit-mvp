@@ -20,7 +20,7 @@ DATA_PATH = os.path.join(DATA_ROOT_DIR, "ground_truth.json")
 DB_PATH = os.path.join(DATA_ROOT_DIR, "ground_truth_db")
 
 def main():
-    print(f"🚀 DB 구축 스크립트 시작")
+    print("🚀 DB 구축 스크립트 시작")
     print(f"📁 읽을 JSON 파일: {DATA_PATH}")
     print(f"💾 DB 저장 경로:   {DB_PATH}")
 
@@ -29,7 +29,7 @@ def main():
     # -------------------------------------------------------
     if os.path.exists(DB_PATH):
         shutil.rmtree(DB_PATH)
-        print(f"🧹 기존 DB 삭제 완료")
+        print("🧹 기존 DB 삭제 완료")
     
     # -------------------------------------------------------
     # 3. JSON 데이터 로드
