@@ -5,14 +5,14 @@ from peft import PeftModel
 
 class StyleGenerator:
     def __init__(self, base_model_id="Qwen/Qwen2.5-1.5B-Instruct"):
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        # self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = "cpu"
         self.tokenizer = AutoTokenizer.from_pretrained(base_model_id)
         self.base_model = AutoModelForCausalLM.from_pretrained(
-            base_model_id,
-            torch_dtype=torch.float16,
-            device_map="auto",
-            offload_folder="./offload", # [핵심] 부족한 메모리를 하드디스크로 대체
-            low_cpu_mem_usage=True
+                            base_model_id,
+                            torch_dtype=torch.float32,
+                            device_map="cpu",
+                            low_cpu_mem_usage=True
         )
         self.active_adapter = None
 
@@ -22,7 +22,6 @@ class StyleGenerator:
         
         if self.active_adapter != bias_type:
             print(f"🔄 Switching Adapter to: {bias_type}")
-            # 기존 어댑터 해제 후 새 어댑터 병합 로직 (PeftModel 활용)
             self.model = PeftModel.from_pretrained(self.base_model, adapter_path)
             self.active_adapter = bias_type
 
@@ -49,7 +48,8 @@ class StyleGenerator:
 
 ### 재작성된 기사:
 """
-        inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
+        # inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
+        inputs = self.tokenizer(prompt, return_tensors="pt").to("cpu")
         with torch.no_grad():
             outputs = self.model.generate(**inputs, max_new_tokens=600)
             
