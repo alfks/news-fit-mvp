@@ -5,24 +5,21 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 
 # ==========================================
-# 1. 경로 설정 (변경된 JSON 위치 반영)
+# 1. 경로 설정
 # ==========================================
-# 현재 스크립트 위치: .../data/ground_truth/
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(BASE_DIR)) # news-fit-mvp/
 
-# 상위 폴더: .../data/
-DATA_ROOT_DIR = os.path.dirname(BASE_DIR)
+# 읽을 데이터 (방금 변환한 파일)
+DATA_PATH = os.path.join(PROJECT_ROOT, "data", "ground_truth.json")
 
-# 1) 데이터 읽을 곳: .../data/ground_truth.json
-DATA_PATH = os.path.join(DATA_ROOT_DIR, "ground_truth.json")
-
-# 2) DB 저장할 곳: .../data/ground_truth_db (그대로 유지)
-DB_PATH = os.path.join(DATA_ROOT_DIR, "ground_truth_db")
+# DB 저장 경로
+DB_PATH = os.path.join(PROJECT_ROOT, "data", "ground_truth_db")
 
 def main():
     print("🚀 DB 구축 스크립트 시작")
-    print(f"📁 읽을 JSON 파일: {DATA_PATH}")
-    print(f"💾 DB 저장 경로:   {DB_PATH}")
+    print(f"📁 읽을 데이터: {DATA_PATH}")
+    print(f"💾 DB 저장소:  {DB_PATH}")
 
     # -------------------------------------------------------
     # 2. 기존 DB 초기화
@@ -30,13 +27,12 @@ def main():
     if os.path.exists(DB_PATH):
         shutil.rmtree(DB_PATH)
         print("🧹 기존 DB 삭제 완료")
-    
+
     # -------------------------------------------------------
     # 3. JSON 데이터 로드
     # -------------------------------------------------------
     if not os.path.exists(DATA_PATH):
-        print(f"❌ [오류] 데이터 파일을 찾을 수 없습니다: {DATA_PATH}")
-        print("👉 같은 폴더의 'create_rag_data.py'를 먼저 실행해주세요.")
+        print("❌ 데이터 파일 없음. create_rag_data.py를 먼저 실행하세요.")
         return
 
     with open(DATA_PATH, "r", encoding="utf-8") as f:
@@ -45,37 +41,35 @@ def main():
     print(f"📂 데이터 로드 성공: {len(rag_data)}건")
 
     # -------------------------------------------------------
-    # 4. 임베딩 모델 및 ChromaDB 로드
+    # 4. 임베딩 및 적재
     # -------------------------------------------------------
-    print("⏳ 임베딩 모델 로딩 중... (jhgan/ko-sbert-nli)")
-    try:
-        embedder = SentenceTransformer("jhgan/ko-sbert-nli")
-    except Exception as e:
-        print(f"❌ 모델 로드 실패: {e}")
-        return
-
+    print("⏳ 임베딩 모델 로딩 중...")
+    embedder = SentenceTransformer("jhgan/ko-sbert-nli")
+    
     client = chromadb.PersistentClient(path=DB_PATH)
     collection = client.get_or_create_collection("news_data")
 
-    # -------------------------------------------------------
-    # 5. 데이터 벡터화 및 적재
-    # -------------------------------------------------------
-    print("💾 데이터를 벡터화하여 DB에 적재 중...")
+    print("💾 DB 적재 중...")
     
-    ids = [item["id"] for item in rag_data]
-    documents = [item["text"] for item in rag_data]
-    metadatas = [item["metadata"] for item in rag_data]
-    
-    embeddings = embedder.encode(documents).tolist()
+    # 배치 처리 (데이터가 많을 수 있으므로)
+    batch_size = 50
+    for i in range(0, len(rag_data), batch_size):
+        batch = rag_data[i : i + batch_size]
+        
+        ids = [item["id"] for item in batch]
+        documents = [item["text"] for item in batch]
+        metadatas = [item["metadata"] for item in batch]
+        embeddings = embedder.encode(documents).tolist()
 
-    collection.add(
-        ids=ids,
-        documents=documents,
-        metadatas=metadatas,
-        embeddings=embeddings
-    )
+        collection.add(
+            ids=ids,
+            documents=documents,
+            metadatas=metadatas,
+            embeddings=embeddings
+        )
+        print(f"   ... {i + len(batch)}/{len(rag_data)} 완료")
 
-    print(f"✅ DB 구축 완료! 총 {len(documents)}개의 데이터가 저장되었습니다.")
+    print("✅ DB 구축 완료!")
 
 if __name__ == "__main__":
     main()
